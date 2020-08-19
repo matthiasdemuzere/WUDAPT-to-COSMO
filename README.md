@@ -1,4 +1,4 @@
-# LCZ-to-CCLM
+# WUDAPT-to-COSMO
 
 Set of tools to use Local Climate Zone (LCZ)-based urban canopy parameters in DWD's COSMO-CLM NWP and regional climate model.
 
