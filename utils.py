@@ -5,7 +5,7 @@ from scipy.interpolate import RegularGridInterpolator
 import scipy.ndimage
 
 ## Helper function to prepare the urban canopy data.
-def prepareUCPlookup(ucpFile, saiWeight=False, snow_f=0, alb_snow=0.70, emi_snow=0.997):
+def prepare_ucp_lookup(ucpFile, saiWeight=False, snow_f=0, alb_snow=0.70, emi_snow=0.997):
 
     """
 
@@ -53,7 +53,7 @@ def prepareUCPlookup(ucpFile, saiWeight=False, snow_f=0, alb_snow=0.70, emi_snow
     ## Total albedo reduction factor, eq. 14 Wouters et al. (2016)
     #psi_bulk = ucp['URB_BLDFR'] + (1-ucp['URB_BLDFR'])*psi_canyon*ucp['URB_H2W']
 
-    ## Bulk albedo
+    ## Bulk shortwave albedo
     alb_roof_snow = ucp['URB_RfALB'] * (1. - snow_f) + alb_snow * snow_f
     alb_road_snow = ucp['URB_RdALB'] * (1. - snow_f) + alb_snow * snow_f
     alb_wall_snow = ucp['URB_WaALB'] * (1. - snow_f) + alb_snow * snow_f
@@ -61,7 +61,7 @@ def prepareUCPlookup(ucpFile, saiWeight=False, snow_f=0, alb_snow=0.70, emi_snow
                             (1. + 2. * ucp['URB_H2W']) * psi_canyon * (1. - ucp['URB_BLDFR']) \
                             + alb_roof_snow * ucp['URB_BLDFR']
     ucp.loc[11:,'URB_SALB'] = 0
-    ucp['URB_TALB'] = ucp['URB_SALB'].copy()
+    #ucp['URB_TALB'] = ucp['URB_SALB'].copy()
 
     ## Bulk emissivity
     emi_roof_snow = (1. - ucp['URB_RfEMI']) * (1. - snow_f) + (1. - emi_snow) * snow_f
@@ -71,6 +71,10 @@ def prepareUCPlookup(ucpFile, saiWeight=False, snow_f=0, alb_snow=0.70, emi_snow
                      / (1. + 2. * ucp['URB_H2W']) * psi_canyon * (1. - ucp['URB_BLDFR']) \
                      + emi_roof_snow * ucp['URB_BLDFR'])
     ucp.loc[11:,'URB_EMIS'] = 0
+
+    ## Bulk thermal albedo
+    ucp['URB_TALB'] = 1- ucp['URB_EMIS']
+    ucp.loc[11:, 'URB_TALB'] = 0
 
 
     ## Calculate Surface Area Index from geometrical considerations (Eq. 3)
@@ -98,7 +102,7 @@ def prepareUCPlookup(ucpFile, saiWeight=False, snow_f=0, alb_snow=0.70, emi_snow
 
 
 ## Helper function to do the interpolation
-def cosmoInterpolator(xLcz, yLcz, dataLcz, xClm, yClm, interpMethod='linear',
+def cosmo_interpolator(xLcz, yLcz, dataLcz, xClm, yClm, interpMethod='linear',
                       aggregation=True, aggregationScale = 2):
 
     """
@@ -185,7 +189,7 @@ def lcz_to_cosmo(ucpFile, clmFile, lczFile, bandNr, ucpVersion, nrLcz=17,
     ## for testing
     #nrLcz = 17; interpMethod = 'linear'; aggregation = True; aggregationScale = 2; isaWeight = True
 
-    lookupUCP  = prepareUCPlookup(ucpFile,saiWeight)
+    lookupUCP  = prepare_ucp_lookup(ucpFile,saiWeight)
 
     ## Read lcz file, make copy of original domainFile
     lczMap = xr.open_rasterio(lczFile)[bandNr,:,:].astype('int')
@@ -242,7 +246,7 @@ def lcz_to_cosmo(ucpFile, clmFile, lczFile, bandNr, ucpVersion, nrLcz=17,
             dataLcz = dataLcz * dataISA
 
         ## Get interpolation object
-        interp_object, aggNr  = cosmoInterpolator(xLcz, yLcz, dataLcz, xClm, yClm,
+        interp_object, aggNr  = cosmo_interpolator(xLcz, yLcz, dataLcz, xClm, yClm,
                                            interpMethod, aggregation, aggregationScale)
 
         ## Apply to get resampled data
@@ -283,7 +287,7 @@ def lcz_to_cosmo(ucpFile, clmFile, lczFile, bandNr, ucpVersion, nrLcz=17,
     return '{}'.format(clmFileNew)
 
 
-def removeDoubleCounting(clmFile,gcFile,removeUrban=True,qLow=0.25,qHigh=0.75,fileNameExt=''):
+def remove_double_counting(clmFile,gcFile,removeUrban=True,qLow=0.25,qHigh=0.75,fileNameExt=''):
 
     """
         Function to remove the double counting of URBAN-BASED parameter values

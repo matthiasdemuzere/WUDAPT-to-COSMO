@@ -26,7 +26,7 @@ This work is an outcome of AEVUS I and II, the COSMO Priority Tasks on "Analysis
               isaWeight=True, saiWeight=False, fileNameExt='')`
 
 ### Step 2: Address the double counting issue.
-`removeDoubleCounting(clmFileNew,gcFile,removeUrban=False)`
+`remove_double_counting(clmFile,gcFile)`
 
 
 
