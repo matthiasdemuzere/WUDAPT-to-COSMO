@@ -3,6 +3,7 @@ import numpy as np
 import xarray as xr
 from scipy.interpolate import RegularGridInterpolator
 import scipy.ndimage
+import rasterio
 
 ## Helper function to prepare the urban canopy data.
 def prepare_ucp_lookup(ucpFile, saiWeight=False, snow_f=0, alb_snow=0.70, emi_snow=0.997):
@@ -10,10 +11,6 @@ def prepare_ucp_lookup(ucpFile, saiWeight=False, snow_f=0, alb_snow=0.70, emi_sn
     """
 
         AUTHOR: Matthias Demuzere (matthias.demuzere [@] rub.de)
-
-        VERSION: 1.0
-
-        DATE: 2020-07-01
 
         :param ucpFile  : Absolute path to urban canopy parameter csv file.
         :param saiWeight: Weigh parameters according to Surface Area Index (Default = False)
@@ -46,57 +43,79 @@ def prepare_ucp_lookup(ucpFile, saiWeight=False, snow_f=0, alb_snow=0.70, emi_sn
     ## Read look-up table
     ucp = pd.read_csv(ucpFile,sep=';',index_col=0).iloc[:17,:]
 
-    ## Canyon albedo reduction factor, eq. 15 Wouters et al. (2016)
+    ## Canyon albedo reduction factor, eq. 15
     psi_canyon = np.exp(-0.6 * ucp['URB_H2W'])
-    psi_canyon[10:] = 0 # Set to zero for non-urban LCZs
+    psi_canyon[10:] = 0  # Set to zero for non-urban LCZs
 
-    ## Total albedo reduction factor, eq. 14 Wouters et al. (2016)
-    #psi_bulk = ucp['URB_BLDFR'] + (1-ucp['URB_BLDFR'])*psi_canyon*ucp['URB_H2W']
+    ## Total albedo reduction factor, eq. 14
+    psi_bulk = psi_canyon * (1 - ucp['URB_BLDFR']) + ucp['URB_BLDFR']
+    psi_bulk[10:] = 0  # Set to zero for non-urban LCZs
 
-    ## Bulk shortwave albedo
+    ## Bulk shortwave albedo, using facet information. Eq 16
     alb_roof_snow = ucp['URB_RfALB'] * (1. - snow_f) + alb_snow * snow_f
     alb_road_snow = ucp['URB_RdALB'] * (1. - snow_f) + alb_snow * snow_f
     alb_wall_snow = ucp['URB_WaALB'] * (1. - snow_f) + alb_snow * snow_f
-    ucp['URB_SALB'] = (alb_road_snow + 2. * ucp['URB_H2W'] * alb_wall_snow) / \
-                            (1. + 2. * ucp['URB_H2W']) * psi_canyon * (1. - ucp['URB_BLDFR']) \
-                            + alb_roof_snow * ucp['URB_BLDFR']
-    ucp.loc[11:,'URB_SALB'] = 0
-    #ucp['URB_TALB'] = ucp['URB_SALB'].copy()
+    ucp['URB_SALB_BK'] = (alb_road_snow + 2. * ucp['URB_H2W'] * alb_wall_snow) / \
+                         (1. + 2. * ucp['URB_H2W']) * psi_canyon * (1. - ucp['URB_BLDFR']) \
+                         + alb_roof_snow * ucp['URB_BLDFR']
+    ucp.loc[11:, 'URB_SALB_BK'] = 0
+    # ucp['URB_TALB'] = ucp['URB_SALB'].copy()
 
-    ## Bulk emissivity
+    ## Bulk emissivity, using facet information. Eq 16
     emi_roof_snow = (1. - ucp['URB_RfEMI']) * (1. - snow_f) + (1. - emi_snow) * snow_f
     emi_road_snow = (1. - ucp['URB_RdEMI']) * (1. - snow_f) + (1. - emi_snow) * snow_f
     emi_wall_snow = (1. - ucp['URB_WaEMI']) * (1. - snow_f) + (1. - emi_snow) * snow_f
-    ucp['URB_EMIS'] = 1. - ((emi_road_snow + 2. * ucp['URB_H2W'] * emi_wall_snow) \
-                     / (1. + 2. * ucp['URB_H2W']) * psi_canyon * (1. - ucp['URB_BLDFR']) \
-                     + emi_roof_snow * ucp['URB_BLDFR'])
-    ucp.loc[11:,'URB_EMIS'] = 0
+    ucp['URB_EMIS_BK'] = 1. - ((emi_road_snow + 2. * ucp['URB_H2W'] * emi_wall_snow) \
+                               / (1. + 2. * ucp['URB_H2W']) * psi_canyon * (1. - ucp['URB_BLDFR']) \
+                               + emi_roof_snow * ucp['URB_BLDFR'])
+    ucp.loc[11:, 'URB_EMIS_BK'] = 0
 
     ## Bulk thermal albedo
-    ucp['URB_TALB'] = 1- ucp['URB_EMIS']
-    ucp.loc[11:, 'URB_TALB'] = 0
-
+    ucp['URB_TALB_BK'] = 1 - ucp['URB_EMIS_BK']
+    ucp.loc[11:, 'URB_TALB_BK'] = 0
 
     ## Calculate Surface Area Index from geometrical considerations (Eq. 3)
     SAI = (1. + 2. * ucp['URB_H2W']) * (1. - ucp['URB_BLDFR']) + ucp['URB_BLDFR']
 
-    ## Get bulk Heat capacity and conductivity, using eq. 10, 11 and 4.
-    ucp['URB_HCON'] = ((1-ucp['URB_BLDFR']) / SAI ) * \
-              (2*ucp['URB_H2W']*ucp['URB_WaHCON'] + ucp['URB_RdHCON']) + \
-              ( ucp['URB_BLDFR'] / SAI * ucp['URB_RfHCON'])
-    ucp['URB_HCAP'] = ((1-ucp['URB_BLDFR']) / SAI ) * \
-              (2*ucp['URB_H2W']*ucp['URB_WaHCAP'] + ucp['URB_RdHCAP']) + \
-              ( ucp['URB_BLDFR'] / SAI * ucp['URB_RfHCAP'])
+    ## Get mean Heat capacity and conductivity, using eq. 10, 11 and 4.
+    ucp['URB_HCON'] = ((1 - ucp['URB_BLDFR']) / SAI) * \
+                      (2 * ucp['URB_H2W'] * ucp['URB_WaHCON'] + ucp['URB_RdHCON']) + \
+                      (ucp['URB_BLDFR'] / SAI * ucp['URB_RfHCON'])
+    ucp['URB_HCAP'] = ((1 - ucp['URB_BLDFR']) / SAI) * \
+                      (2 * ucp['URB_H2W'] * ucp['URB_WaHCAP'] + ucp['URB_RdHCAP']) + \
+                      (ucp['URB_BLDFR'] / SAI * ucp['URB_RfHCAP'])
+
+    ## Mean facet-level albedo and emissivity based on eq. 10
+    ## Only added for testing and potential comparison with other models
+    ## These values are currently not used in TERRA_URB.
+    ucp['URB_EMIS_FL'] = ((1 - ucp['URB_BLDFR']) / SAI) * \
+                         (2 * ucp['URB_H2W'] * ucp['URB_WaEMI'] + ucp['URB_RdEMI']) + \
+                         (ucp['URB_BLDFR'] / SAI * ucp['URB_RfEMI'])
+    ucp['URB_SALB_FL'] = ((1 - ucp['URB_BLDFR']) / SAI) * \
+                         (2 * ucp['URB_H2W'] * ucp['URB_WaALB'] + ucp['URB_RdALB']) + \
+                         (ucp['URB_BLDFR'] / SAI * ucp['URB_RfALB'])
+    ucp['URB_TALB_FL'] = 1 - ucp['URB_EMIS_FL']
+    ucp.loc[11:, 'URB_SALB_FL'] = 0
+    ucp.loc[11:, 'URB_TALB_FL'] = 0
+
+    ## For now, TERRA-URB only reads in one average facet-level albedo.
+    ## The bulk calculation from eqs. 13 is done within TERRA_URB
+    ## Therefore, the bulk value needs to be reversed back to a mean
+    ## facet value, so that eq. 13 is solved for alb = alb_bulk / psi_bulk
+    ## The same is done for the emissivity.
+    ucp['URB_SALB'] = ucp['URB_SALB_BK'] / psi_bulk
+    ucp['URB_TALB'] = ucp['URB_TALB_BK'] / psi_bulk
+    ucp['URB_EMIS'] = 1 - ucp['URB_TALB']
 
     ## Also add the thermal admittance
-    #ucp['URB_TADM'] = (ucp['URB_HCAP']*ucp['URB_HCON'])**0.5
+    # ucp['URB_TADM'] = (ucp['URB_HCAP']*ucp['URB_HCON'])**0.5
 
     ## iS SAI weighting requested, according to Eq. 4?
     ## This is done within TERRA_URB, so no need to do for COSMO/CLM input files.
     if saiWeight:
         ucp['URB_HCON'] = ucp['URB_HCON'] * SAI
         ucp['URB_HCAP'] = ucp['URB_HCAP'] * SAI
-        #ucp['URB_TADM'] = ucp['URB_TADM'] * SAI
+        # ucp['URB_TADM'] = ucp['URB_TADM'] * SAI
 
     return ucp
 
@@ -107,10 +126,6 @@ def cosmo_interpolator(xLcz, yLcz, dataLcz, xClm, yClm, interpMethod='linear',
 
     """
         AUTHOR: Matthias Demuzere (matthias.demuzere [@] rub.de)
-
-        VERSION: 1.0
-
-        DATE: 2020-07-01
 
         :param xLcz: values of LCZ longitudes
         :param yLcz: values of LCZ latitudes
@@ -150,10 +165,6 @@ def lcz_to_cosmo(ucpFile, clmFile, lczFile, bandNr, ucpVersion, nrLcz=17,
         Function to introduce LCZ Urban Canopy Parameters into CCLM domain file
 
         AUTHOR: Matthias Demuzere (matthias.demuzere [@] rub.de)
-
-        VERSION: 1.0
-
-        DATE: 2020-07-01
 
         :param ucpFile: full absolute path name to ucp .csv table.
         :param clmFile: full absolute path name to COSMO-CLM domain file
@@ -217,6 +228,12 @@ def lcz_to_cosmo(ucpFile, clmFile, lczFile, bandNr, ucpVersion, nrLcz=17,
                      'URB_SALB',
                      'URB_TALB',
                      'URB_EMIS',
+                     'URB_SALB_FL',
+                     'URB_TALB_FL',
+                     'URB_EMIS_FL',
+                     'URB_SALB_BK',
+                     'URB_TALB_BK',
+                     'URB_EMIS_BK',
                      'URB_HCON',
                      'URB_HCAP']
 
@@ -293,10 +310,6 @@ def remove_double_counting(clmFile,gcFile,removeUrban=True,qLow=0.25,qHigh=0.75,
         Function to remove the double counting of URBAN-BASED parameter values
 
         AUTHOR: Matthias Demuzere (matthias.demuzere [@] rub.de)
-
-        VERSION: 1.0
-
-        DATE: 2020-07-01
 
         :param clmFile: full absolute path name to COSMO-CLM domain file
         :param gcFile: full absolute path name to globcover look-up table
