@@ -3,7 +3,7 @@
 Set of tools to use Local Climate Zone (LCZ)-based urban canopy parameters in DWD's COSMO-CLM NWP and regional climate model.
 
 ## Citaton
-Varentsov, M., Samsonov, T., Demuzere, M., (under review). Impact of urban canopy parameters on a megacity’s modelled thermal environment. Atmosphere.
+Varentsov, M., Samsonov, T., Demuzere, M., (2020). Impact of urban canopy parameters on a megacity’s modelled thermal environment. Atmosphere 11(12), 1349; [https://doi.org/10.3390/atmos11121349](https://www.mdpi.com/2073-4433/11/12/1349).
 
 ## Context
 TERRA_URB is the urban canopy parameterization embedded in TERRA-ML, the land surface model in COSMO-CLM. By default it uses impervious surface area information from the [Copernicus Land Monitoring Service](https://land.copernicus.eu/pan-european/high-resolution-layers/imperviousness) (for Europe) / [National Geophysical Data Center](https://databasin.org/datasets/016d2235a5ed43ad83ceeed6c408d149) (global) and anthropogenic heat flux information from [Flanner et al. (2010)](https://agupubs.onlinelibrary.wiley.com/doi/full/10.1029/2008gl036465). All other geometrical, thermal and radiative urban canopy parameters are spatially invariant, and set to the bulk values provided in Table 1 of [Wouters et al., 2016](https://gmd.copernicus.org/articles/9/3027/2016/)).
