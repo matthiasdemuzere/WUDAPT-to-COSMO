@@ -30,7 +30,7 @@ It is advised to use a python virtual environment:
 1. Go into scriptdir: `cd /SCRIPT/DIR/`
 2. Create virtual environment: `python3 -m venv venv` or `virtualenv venv`
 3. Install module requirements: `venv/bin/pip install -r requirements.txt`
-4. Use `venv/bin/pip/python` to run scripts.
+4. Use `venv/bin/python` to run scripts.
 
 The `requirements.txt` can be generated using `pipreqs`: 
 ```
