@@ -10,7 +10,8 @@ TERRA_URB is the urban canopy parameterization embedded in TERRA-ML, the land su
 
 The set of tools provided in this repo allow one to introduce LCZ-based urban canopy parameters, compiled from [Stewart and Oke (2012)](http://10.1175/BAMS-D-11-00019.1) and [Stewart et al. (2014)](http://10.1002/joc.3746).
 
-This work is an outcome of AEVUS I and II, the COSMO Priority Tasks on "Analysis and evaluation of the TERRA_URB scheme". More info [here](http://www.cosmo-model.org/content/tasks/priorityTasks/default.htm) (project pages only accessible to COSMO members).
+This work is an outcome of AEVUS I and II, the COSMO Priority Tasks on "Analysis and evaluation of the TERRA_URB scheme". More info [here](http://www.cosmo-model.org/content/tasks/priorityTasks/default.htm) (project pages only accessible to COSMO members). Preliminary test results of LCZ parameters in COSMO-CLM are also described in Brousse et al. ([2019](https://doi.org/10.1016/j.uclim.2018.12.004), [2020](https://onlinelibrary.wiley.com/doi/abs/10.1002/joc.6477)) and Van de Walle et al. (20xx, under review).  
+
 
 
 ## Requirements
