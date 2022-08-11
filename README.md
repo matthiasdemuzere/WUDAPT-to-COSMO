@@ -10,31 +10,28 @@ TERRA_URB is the urban canopy parameterization embedded in TERRA-ML, the land su
 
 The set of tools provided in this repo allow one to introduce LCZ-based urban canopy parameters, compiled from [Stewart and Oke (2012)](http://10.1175/BAMS-D-11-00019.1) and [Stewart et al. (2014)](http://10.1002/joc.3746).
 
-This work is an outcome of AEVUS I and II, the COSMO Priority Tasks on "Analysis and evaluation of the TERRA_URB scheme". More info [here](http://www.cosmo-model.org/content/tasks/priorityTasks/default.htm) (project pages only accessible to COSMO members). Preliminary test results of LCZ parameters in COSMO-CLM are also described in Brousse et al. ([2019](https://doi.org/10.1016/j.uclim.2018.12.004), [2020](https://onlinelibrary.wiley.com/doi/abs/10.1002/joc.6477)) and Van de Walle et al. (20xx, under review).  
+This work is an outcome of AEVUS I and II, the COSMO Priority Tasks on "Analysis and evaluation of the TERRA_URB scheme". More info [here](http://www.cosmo-model.org/content/tasks/priorityTasks/default.htm) (project pages only accessible to COSMO members). Preliminary test results of LCZ parameters in COSMO-CLM are also described in Brousse et al. ([2019](https://doi.org/10.1016/j.uclim.2018.12.004), [2020](https://onlinelibrary.wiley.com/doi/abs/10.1002/joc.6477)) and [Van de Walle et al. (2021)](http://doi.org/10.1007/s00704-021-03733-7).  
 
 
 
 ## Requirements
 * Be a member of the [COSMO-CLM community](https://wiki.coast.hzg.de/clmcom/), in order to be able to access [EXTPAR](https://wiki.coast.hzg.de/clmcom/external-data-98599196.html).
 * Have your domain file available from EXTPAR (netcdf file)
-* an LCZ map covering the same region of interest. Sources for existing LCZ maps:
-    * Europe: [paper](https://journals.plos.org/plosone/article?id=10.1371/journal.pone.0214474) | [data](http://doi.org/10.6084/m9.figshare.13322450.v1)
-    * Continental United States: [paper](https://doi.org/10.1038/s41597-020-00605-z) | [data](https://doi.org/10.6084/m9.figshare.11416950.v1) 
-    * An online LCZ Generator tool is currently under development; a beta version can be accessed [here](https://lcz-generator.geographie.rub.de/). Please contact Matthias.Demuzere @ rub.de for more information.
-    
+* an LCZ map covering the same region of interest. Sources for existing LCZ maps are listed [here](https://www.wudapt.org/lcz-maps/).
 
 
-## Instructions
+## Virtual environment
 
-It is advised to use a python virtual environment:
-1. Go into scriptdir: `cd /SCRIPT/DIR/`
-2. Create virtual environment: `python3 -m venv venv` or `virtualenv venv`
-3. Install module requirements: `venv/bin/pip install -r requirements.txt`
-4. Use `venv/bin/python` to run scripts.
+It is advised to use a python virtual environment, eg.:
+
+```
+> python3.9 -m venv ~/w2c_venv
+> . ~/w2c_venv/bin/activate
+> pip install -r requirements.txt
+```
 
 The `requirements.txt` can be generated using `pipreqs`: 
 ```
-cd /SCRIPT/DIR/
 pipreqs --ignore=terra/ .
 ```
 
@@ -45,6 +42,6 @@ The run code is currently configured for the Moscow case, as developed in Varent
 CLM and LCZ input data used in this study is provided under `data/`.
 
 ```
-venv/bin/pip/python run.py
+python run.py
 ```
 
