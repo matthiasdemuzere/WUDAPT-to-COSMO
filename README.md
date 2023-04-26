@@ -18,9 +18,10 @@ This work is an outcome of AEVUS I and II, the COSMO Priority Tasks on "Analysis
 * Be a member of the [COSMO-CLM community](https://wiki.coast.hzg.de/clmcom/), in order to be able to access [EXTPAR](https://wiki.coast.hzg.de/clmcom/external-data-98599196.html).
 * Have your domain file available from EXTPAR (netcdf file)
 * an LCZ map covering the same region of interest. Sources for existing LCZ maps:
+    * Global: [paper](https://essd.copernicus.org/articles/14/3835/2022/essd-14-3835-2022.html) | [data](https://doi.org/10.5281/zenodo.6364593)
     * Europe: [paper](https://journals.plos.org/plosone/article?id=10.1371/journal.pone.0214474) | [data](http://doi.org/10.6084/m9.figshare.13322450.v1)
     * Continental United States: [paper](https://doi.org/10.1038/s41597-020-00605-z) | [data](https://doi.org/10.6084/m9.figshare.11416950.v1) 
-    * An online LCZ Generator tool is currently under development; a beta version can be accessed [here](https://lcz-generator.geographie.rub.de/). Please contact Matthias.Demuzere @ rub.de for more information.
+    * Via the [LCZ Generator](https://lcz-generator.rub.de/).
     
 
 
